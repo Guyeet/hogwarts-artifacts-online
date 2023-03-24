@@ -1,5 +1,7 @@
 package edu.tcu.cs.hogwartsartifactsonline.wizard;
 
+import edu.tcu.cs.hogwartsartifactsonline.artifact.Artifact;
+import edu.tcu.cs.hogwartsartifactsonline.artifact.ArtifactRepository;
 import edu.tcu.cs.hogwartsartifactsonline.artifact.utils.IdWorker;
 import edu.tcu.cs.hogwartsartifactsonline.system.exception.ObjectNotFoundException;
 import jakarta.transaction.Transactional;
@@ -13,11 +15,11 @@ public class WizardService {
 
     private final WizardRepository wizardRepository;
 
-    private final IdWorker idWorker;
+    private final ArtifactRepository artifactRepository;
 
-    public WizardService(WizardRepository wizardRepository, IdWorker idWorker) {
+    public WizardService(WizardRepository wizardRepository, ArtifactRepository artifactRepository, IdWorker idWorker) {
         this.wizardRepository = wizardRepository;
-        this.idWorker = idWorker;
+        this.artifactRepository = artifactRepository;
     }
 
     public Wizard findById(Integer wizardId){
@@ -47,6 +49,23 @@ public class WizardService {
         //unassign wizard's owned artifacts
         deletedWizard.removeAllArtifacts();
         this.wizardRepository.deleteById(wizardId);
+
+    }
+
+    public void assignArtifact(Integer wizardId, String artifactId){
+        //Find this artifact by Id from DB
+        Artifact artifactToBeAssigned = this.artifactRepository.findById(artifactId)
+                .orElseThrow(() -> new ObjectNotFoundException("artifact", artifactId));
+
+        //Find this wizard by Id from DB
+        Wizard wizard = this.wizardRepository.findById(wizardId)
+                .orElseThrow(() -> new ObjectNotFoundException("wizard", wizardId));
+        //Artifact Assignment
+        //We need to see if the artifact is already owned by another wizard
+        if(artifactToBeAssigned.getOwner() != null){
+            artifactToBeAssigned.getOwner().removeArtifact(artifactToBeAssigned);
+        }
+        wizard.addArtifact(artifactToBeAssigned);
 
     }
 }
